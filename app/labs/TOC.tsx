@@ -34,7 +34,7 @@ export default function TOC() {
           </Link>
         </li>
       </ul>
-      <p>Tianze Li — learning to build complete web applications.</p>
+      <p>Tianze Li</p>
     </div>
   );
 }

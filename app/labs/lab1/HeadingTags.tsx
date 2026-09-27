@@ -21,7 +21,7 @@ export default function HeadingTags() {
       <h5>h5</h5>
       <h6>h6</h6>
       <div id="wd-your-heading">
-        <h4>Tianze Li: My Web Development journey</h4>
+        <h4>Tianze Li</h4>
         <p>
           I am an MS in Computer Science student at Northeastern University
           with experience in Java, C++, and Python. Outside of programming,
@@ -31,8 +31,11 @@ export default function HeadingTags() {
       </div>
       <div id="wd-ai-headings">
         <h4>Lab notes</h4>
+        <p>This example uses headings to organize a document.</p>
         <h5>What I built</h5>
+        <p>The outline contains a section, a subsection, and a smaller heading.</p>
         <h6>Next step</h6>
+        <p>Add a paragraph under each heading to describe its topic.</p>
       </div>
     </div>
   );
