@@ -21,9 +21,13 @@ export default function HeadingTags() {
       <h5>h5</h5>
       <h6>h6</h6>
       <div id="wd-your-heading">
-        <h4>
-          <span id="wd-your-span">Tianze Li</span>: My Web Development journey
-        </h4>
+        <h4>Tianze Li: My Web Development journey</h4>
+        <p>
+          I am an MS in Computer Science student at Northeastern University
+          with experience in Java, C++, and Python. Outside of programming,
+          I enjoy <span id="wd-your-span">photography</span>, playing guitar,
+          and hiking.
+        </p>
       </div>
       <div id="wd-ai-headings">
         <h4>Lab notes</h4>
