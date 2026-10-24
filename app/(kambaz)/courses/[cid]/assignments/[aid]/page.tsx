@@ -1,11 +1,13 @@
 import Link from "next/link";
+import * as db from "../../../../database";
 
 export default async function AssignmentEditor({
   params,
 }: {
   params: Promise<{ cid: string; aid: string }>;
 }) {
-  const { cid } = await params;
+  const { cid, aid } = await params;
+  const assignment = db.assignments.find((a) => a._id === aid && a.course === cid);
   return (
     <div id="wd-assignments-editor" className="max-w-3xl">
       <label className="mb-2 block font-medium" htmlFor="wd-name">
@@ -14,8 +16,9 @@ export default async function AssignmentEditor({
       <input
         className="mb-2 w-full rounded border border-neutral-300 px-3 py-2"
         id="wd-name"
-        defaultValue="A1 - ENV + HTML"
+        defaultValue={assignment?.title ?? ""}
       />
+      <p>Assignment id: {aid}</p>
       <label className="mb-2 block font-medium" htmlFor="wd-description">
         Description
       </label>
@@ -24,7 +27,7 @@ export default async function AssignmentEditor({
         id="wd-description"
         rows={5}
         cols={60}
-        defaultValue="The assignment is available online Submit a link to the landing page of your Web application running on Vercel."
+        defaultValue={assignment?.description ?? ""}
       />
       <div className="space-y-4">
         <div className="grid gap-2 sm:grid-cols-[160px_minmax(0,1fr)]">
@@ -36,7 +39,7 @@ export default async function AssignmentEditor({
               className="mb-2 w-full rounded border border-neutral-300 px-3 py-2"
               type="number"
               id="wd-points"
-              defaultValue={100}
+              defaultValue={assignment?.points ?? 100}
             />
           </div>
         </div>
@@ -142,21 +145,21 @@ export default async function AssignmentEditor({
               className="mb-2 w-full rounded border border-neutral-300 px-3 py-2"
               type="date"
               id="wd-due-date"
-              defaultValue="2026-05-13"
+              defaultValue={assignment?.due ?? ""}
             />
             <label htmlFor="wd-available-from">Available from</label>
             <input
               className="mb-2 w-full rounded border border-neutral-300 px-3 py-2"
               type="date"
               id="wd-available-from"
-              defaultValue="2026-05-06"
+              defaultValue={assignment?.available ?? ""}
             />
             <label htmlFor="wd-available-until">Until</label>
             <input
               className="mb-2 w-full rounded border border-neutral-300 px-3 py-2"
               type="date"
               id="wd-available-until"
-              defaultValue="2026-05-13"
+              defaultValue={assignment?.due ?? ""}
             />
           </div>
         </div>
