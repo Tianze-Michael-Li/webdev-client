@@ -61,19 +61,11 @@ const LINKS = [
   },
 ] as const;
 
-const activeStyle = {
-  backgroundColor: "#2563eb",
-  color: "white",
-  borderRadius: "4px",
-  padding: "2px 8px",
-  textDecoration: "none",
-};
-
 export default function TOC() {
   const pathname = usePathname() ?? "";
   return (
     <div>
-      <ul>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
         {LINKS.map((link) => {
           const active = link.match(pathname);
           return (
@@ -81,7 +73,7 @@ export default function TOC() {
               <Link
                 href={link.href}
                 id={link.id}
-                style={active ? activeStyle : undefined}
+                className={`block rounded px-3 py-2 no-underline ${active ? "bg-blue-600 text-white" : "text-blue-600"}`}
                 aria-current={active ? "page" : undefined}
               >
                 {link.label}

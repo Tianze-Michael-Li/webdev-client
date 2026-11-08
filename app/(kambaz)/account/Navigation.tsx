@@ -1,44 +1,31 @@
 "use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAccountContext } from "./AccountContext";
 
 export default function AccountNavigation() {
-  const pathname = usePathname();
+  const { currentUser } = useAccountContext();
+  const links = currentUser
+    ? (["profile"] as const)
+    : (["signin", "signup"] as const);
+  const pathname = usePathname() ?? "";
   return (
-    <div
-      id="wd-account-navigation"
-      className="wd list-group rounded-none text-lg"
-    >
-      <Link
-        href="/account/signin"
-        className={
-          pathname === "/account/signin"
-            ? "list-group-item active"
-            : "list-group-item"
-        }
-      >
-        Signin
-      </Link>
-      <Link
-        href="/account/signup"
-        className={
-          pathname === "/account/signup"
-            ? "list-group-item active"
-            : "list-group-item"
-        }
-      >
-        Signup
-      </Link>
-      <Link
-        href="/account/profile"
-        className={
-          pathname === "/account/profile"
-            ? "list-group-item active"
-            : "list-group-item"
-        }
-      >
-        Profile
-      </Link>
+    <div id="wd-account-navigation" className="list-group wd">
+      {links.map((link) => (
+        <span key={link} className="contents">
+          <Link
+            href={`/account/${link}`}
+            className={`list-group-item ${pathname.includes(link) ? "active" : ""}`}
+          >
+            {link === "signin"
+              ? "Signin"
+              : link === "signup"
+                ? "Signup"
+                : "Profile"}
+          </Link>
+        </span>
+      ))}
     </div>
   );
 }

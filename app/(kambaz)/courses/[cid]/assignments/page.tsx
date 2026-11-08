@@ -1,16 +1,25 @@
+"use client";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import AssignmentItem from "./AssignmentItem";
-import * as db from "../../../database";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAssignmentsStore } from "../../../store/assignmentsStore";
+import { useAccountContext } from "../../../account/AccountContext";
 
-export default async function Assignments({
-  params,
-}: {
-  params: Promise<{ cid: string }>;
-}) {
-  const { cid } = await params;
-  const assignments = db.assignments.filter(
-    (assignment) => assignment.course === cid,
+export default function Assignments() {
+  const { cid } = useParams<{ cid: string }>();
+  const router = useRouter();
+  const allAssignments = useAssignmentsStore((state) => state.assignments);
+  const deleteAssignment = useAssignmentsStore(
+    (state) => state.deleteAssignment,
   );
+  const { currentUser } = useAccountContext();
+  const canEdit =
+    !currentUser ||
+    currentUser.role === "FACULTY" ||
+    currentUser.role === "ADMIN";
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const assignments = allAssignments.filter((a) => a.course === cid);
   return (
     <div id="wd-assignments">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -22,22 +31,25 @@ export default async function Assignments({
             className="rounded border py-1.5 pr-3 pl-9 text-sm"
           />
         </div>
-        <div className="flex gap-2">
-          <button
-            id="wd-add-assignment-group"
-            type="button"
-            className="inline-flex items-center gap-1 rounded border px-3 py-1.5 text-sm"
-          >
-            <FaPlus /> Group
-          </button>
-          <button
-            id="wd-add-assignment"
-            type="button"
-            className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white"
-          >
-            <FaPlus /> Assignment
-          </button>
-        </div>
+        {canEdit && (
+          <div className="flex gap-2">
+            <button
+              id="wd-add-assignment-group"
+              type="button"
+              className="inline-flex items-center gap-1 rounded border px-3 py-1.5 text-sm"
+            >
+              <FaPlus /> Group
+            </button>
+            <button
+              id="wd-add-assignment"
+              onClick={() => router.push(`/courses/${cid}/assignments/new`)}
+              type="button"
+              className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white"
+            >
+              <FaPlus /> Assignment
+            </button>
+          </div>
+        )}
       </div>
       <h3
         id="wd-assignments-title"
@@ -57,11 +69,41 @@ export default async function Assignments({
             key={assignment._id}
             cid={cid}
             aid={assignment._id}
+            onDelete={canEdit ? () => setDeletingId(assignment._id) : undefined}
             title={assignment.title}
             details={`Multiple Modules | Not available until ${assignment.available} | Due ${assignment.due} | ${assignment.points} pts`}
           />
         ))}
       </ul>
+      {deletingId && (
+        <div
+          role="dialog"
+          aria-label="Delete assignment"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        >
+          <div className="rounded bg-white p-5 shadow-lg">
+            <h3>Delete Assignment</h3>
+            <p>Are you sure you want to remove this assignment?</p>
+            <button
+              id="wd-cancel-delete-assignment"
+              className="me-2 rounded border px-3 py-2"
+              onClick={() => setDeletingId(null)}
+            >
+              Cancel
+            </button>
+            <button
+              id="wd-confirm-delete-assignment"
+              className="rounded bg-red-600 px-3 py-2 text-white"
+              onClick={() => {
+                deleteAssignment(deletingId, cid);
+                setDeletingId(null);
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
