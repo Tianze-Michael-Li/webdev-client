@@ -1,43 +1,58 @@
 "use client";
 import { FaUserCircle } from "react-icons/fa";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   emptyUser,
   useAccountContext,
   type User,
 } from "../../../../account/AccountContext";
-import { useEnrollmentsStore } from "../../../../store/enrollmentsStore";
+import * as client from "../../../../account/client";
+import { unenrollFromCourse } from "../../../client";
 
 export default function PeopleTable() {
   const { cid } = useParams<{ cid: string }>();
-  const { users, currentUser, addUser, updateUser } = useAccountContext();
-  const enrollments = useEnrollmentsStore((state) => state.enrollments);
-  const enroll = useEnrollmentsStore((state) => state.enroll);
-  const unenroll = useEnrollmentsStore((state) => state.unenroll);
+  const { currentUser } = useAccountContext();
+  const [users, setUsers] = useState<User[]>([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    client
+      .findUsersForCourse(cid)
+      .then(setUsers)
+      .catch(() => setError("Unable to load people"));
+  }, [cid]);
   const [person, setPerson] = useState<User>(emptyUser);
   const [showEditor, setShowEditor] = useState(false);
   const canEdit =
     !currentUser ||
     currentUser.role === "FACULTY" ||
     currentUser.role === "ADMIN";
-  const save = () => {
+  const save = async () => {
     if (!person.username.trim()) return;
-    if (person._id) updateUser(person);
-    else {
-      const user = { ...person, _id: crypto.randomUUID() };
-      addUser(user);
-      enroll(user._id, cid);
+    try {
+      if (person._id) await client.updateUser(person);
+      else await client.createUserForCourse(cid, person);
+      setUsers(await client.findUsersForCourse(cid));
+      setShowEditor(false);
+    } catch {
+      setError("Unable to save person");
     }
-    setShowEditor(false);
   };
-  const enrolled = users.filter((usr) =>
-    enrollments.some(
-      (enrollment) => enrollment.user === usr._id && enrollment.course === cid,
-    ),
-  );
+  const removePerson = async (userId: string) => {
+    try {
+      await unenrollFromCourse(userId, cid);
+      setUsers(await client.findUsersForCourse(cid));
+    } catch {
+      setError("Unable to remove person");
+    }
+  };
   return (
     <div id="wd-people-table" className="overflow-x-auto">
+      {error && (
+        <p role="alert" className="text-red-800">
+          {error}
+        </p>
+      )}
       {canEdit && (
         <button
           id="wd-add-person"
@@ -120,7 +135,7 @@ export default function PeopleTable() {
           </tr>
         </thead>
         <tbody>
-          {enrolled.map((user) => (
+          {users.map((user) => (
             <tr key={user._id} className="odd:bg-neutral-50">
               <td className="wd-full-name p-2 text-nowrap">
                 <FaUserCircle className="me-2 inline align-middle text-3xl text-neutral-500" />
@@ -145,7 +160,7 @@ export default function PeopleTable() {
                   </button>
                   <button
                     className="rounded bg-red-600 px-2 py-1 text-white"
-                    onClick={() => unenroll(user._id, cid)}
+                    onClick={() => removePerson(user._id)}
                   >
                     Delete
                   </button>

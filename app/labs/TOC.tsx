@@ -59,6 +59,18 @@ const LINKS = [
     label: "GitHub",
     match: () => false,
   },
+  {
+    href: "https://github.com/Tianze-Michael-Li/webdev-server",
+    id: "wd-server-github",
+    label: "Server GitHub",
+    match: () => false,
+  },
+  {
+    href: process.env.NEXT_PUBLIC_HTTP_SERVER || "",
+    id: "wd-server-link",
+    label: "Node Server",
+    match: () => false,
+  },
 ] as const;
 
 export default function TOC() {

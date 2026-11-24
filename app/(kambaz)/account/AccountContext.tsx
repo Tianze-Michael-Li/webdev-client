@@ -1,9 +1,20 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-import usersJson from "../database/users.json";
 
-export type User = (typeof usersJson)[number];
+export type User = {
+  _id: string;
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  loginId: string;
+  section: string;
+  lastActivity: string;
+  totalActivity: string;
+};
 
 export const emptyUser: User = {
   _id: "",
@@ -20,10 +31,6 @@ export const emptyUser: User = {
 };
 
 type AccountContextValue = {
-  users: User[];
-  addUser: (user: User) => void;
-  updateUser: (user: User) => void;
-
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
 };
@@ -32,16 +39,8 @@ const AccountContext = createContext<AccountContextValue | null>(null);
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(usersJson);
-  const addUser = (user: User) => setUsers((rows) => [...rows, user]);
-  const updateUser = (user: User) => {
-    setUsers((rows) => rows.map((row) => (row._id === user._id ? user : row)));
-    if (currentUser?._id === user._id) setCurrentUser(user);
-  };
   return (
-    <AccountContext.Provider
-      value={{ currentUser, setCurrentUser, users, addUser, updateUser }}
-    >
+    <AccountContext.Provider value={{ currentUser, setCurrentUser }}>
       {children}
     </AccountContext.Provider>
   );

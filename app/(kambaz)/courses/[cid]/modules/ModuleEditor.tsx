@@ -1,3 +1,4 @@
+import * as client from "../../client";
 import { useState } from "react";
 import { FaPlus } from "react-icons/fa";
 import { useParams } from "next/navigation";
@@ -8,6 +9,7 @@ export default function ModuleEditor() {
   const [show, setShow] = useState(false);
   const [moduleName, setModuleName] = useState("");
   const addModule = useModulesStore((state) => state.addModule);
+  const [error, setError] = useState("");
   return (
     <>
       <button
@@ -36,6 +38,11 @@ export default function ModuleEditor() {
               </button>
             </div>
             <div className="px-4 py-3">
+              {error && (
+                <p role="alert" className="text-red-800">
+                  {error}
+                </p>
+              )}
               <input
                 className="w-full rounded border border-neutral-300 px-3 py-1.5"
                 value={moduleName}
@@ -55,9 +62,20 @@ export default function ModuleEditor() {
               </button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   if (!moduleName.trim()) return;
-                  addModule({ name: moduleName, course: String(cid) });
+                  try {
+                    addModule(
+                      await client.createModuleForCourse(String(cid), {
+                        name: moduleName,
+                        description: "",
+                        lessons: [],
+                      }),
+                    );
+                  } catch {
+                    setError("Unable to create module");
+                    return;
+                  }
                   setModuleName("");
                   setShow(false);
                 }}

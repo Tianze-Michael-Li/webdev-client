@@ -1,12 +1,13 @@
 "use client";
 
+import * as client from "../client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAccountContext, type User } from "../AccountContext";
 
 export default function Profile() {
   const [profile, setProfile] = useState<User | null>(null);
-  const { currentUser, setCurrentUser, updateUser } = useAccountContext();
+  const { currentUser, setCurrentUser } = useAccountContext();
   const router = useRouter();
 
   useEffect(() => {
@@ -19,15 +20,35 @@ export default function Profile() {
     setProfile(currentUser);
   }, [currentUser, router]);
 
-  const signout = () => {
+  const [error, setError] = useState("");
+  const signout = async () => {
+    try {
+      await client.signout();
+    } catch {
+      setError("Unable to sign out");
+      return;
+    }
     setCurrentUser(null);
     router.push("/account/signin");
   };
 
+  const updateProfile = async () => {
+    if (!profile) return;
+    try {
+      setCurrentUser(await client.updateUser(profile));
+    } catch {
+      setError("Unable to update profile");
+    }
+  };
   if (!currentUser || !profile) return null;
   return (
     <div id="wd-profile-screen">
       <h3>Profile</h3>
+      {error && (
+        <p role="alert" className="text-red-800">
+          {error}
+        </p>
+      )}
       <input
         className="mb-3 block w-full max-w-sm rounded border border-neutral-300 px-3 py-2"
         id="wd-username"
@@ -95,7 +116,7 @@ export default function Profile() {
         type="button"
         id="wd-update-profile"
         className="me-2 rounded bg-blue-600 px-3 py-2 text-white"
-        onClick={() => updateUser(profile)}
+        onClick={updateProfile}
       >
         Update
       </button>

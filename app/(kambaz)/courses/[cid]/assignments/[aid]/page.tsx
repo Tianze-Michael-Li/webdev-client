@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import * as client from "../../../client";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   emptyAssignment,
@@ -12,6 +13,20 @@ import { useAccountContext } from "../../../../account/AccountContext";
 export default function AssignmentEditor() {
   const { cid, aid } = useParams<{ cid: string; aid: string }>();
   const assignments = useAssignmentsStore((state) => state.assignments);
+  const setAssignments = useAssignmentsStore((state) => state.setAssignments);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    client
+      .findAssignmentsForCourse(cid)
+      .then((assignments) => {
+        setAssignments(assignments);
+        setLoaded(true);
+      })
+      .catch(() => setError("Unable to load assignment"));
+  }, [cid, aid, setAssignments]);
+  if (error) return <p role="alert">{error}</p>;
+  if (!loaded) return null;
   const assignment = assignments.find((a) => a._id === aid && a.course === cid);
   return (
     <EditorForm
@@ -44,15 +59,33 @@ function EditorForm({
     currentUser.role === "FACULTY" ||
     currentUser.role === "ADMIN";
   const router = useRouter();
-  const save = () => {
+  const [error, setError] = useState("");
+  const save = async () => {
     if (!canEdit) return;
-    if (aid === "new") addAssignment({ ...assignment, course: cid });
-    else if (initial)
-      updateAssignment({ ...assignment, course: cid, _id: aid });
+    try {
+      if (aid === "new")
+        addAssignment(await client.createAssignmentForCourse(cid, assignment));
+      else if (initial)
+        updateAssignment(
+          await client.updateAssignment({
+            ...assignment,
+            course: cid,
+            _id: aid,
+          }),
+        );
+    } catch {
+      setError("Unable to save assignment");
+      return;
+    }
     router.push(`/courses/${cid}/assignments`);
   };
   return (
     <div id="wd-assignments-editor" className="max-w-3xl">
+      {error && (
+        <p role="alert" className="text-red-800">
+          {error}
+        </p>
+      )}
       <label className="mb-2 block font-medium" htmlFor="wd-name">
         Assignment Name
       </label>

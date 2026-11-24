@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccountContext } from "../account/AccountContext";
-import { useEnrollmentsStore } from "../store/enrollmentsStore";
+import * as client from "../courses/client";
 import CourseCard from "./CourseCard";
 import {
   emptyCourse,
@@ -17,23 +17,76 @@ export default function Dashboard() {
   const [course, setCourse] = useState<Course>(emptyCourse);
 
   const { currentUser } = useAccountContext();
-  const enrollments = useEnrollmentsStore((state) => state.enrollments);
+  const setCourses = useCoursesStore((state) => state.setCourses);
+  const deleteCourse = useCoursesStore((state) => state.deleteCourse);
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+  const [error, setError] = useState("");
   const [showAllCourses, setShowAllCourses] = useState(false);
   const canEdit =
-    !currentUser ||
-    currentUser.role === "FACULTY" ||
-    currentUser.role === "ADMIN";
-  const visibleCourses =
-    !currentUser || showAllCourses
-      ? courses
-      : courses.filter((c) =>
-          enrollments.some(
-            (e) => e.user === currentUser._id && e.course === c._id,
-          ),
+    currentUser?.role === "FACULTY" || currentUser?.role === "ADMIN";
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const enrolled: Course[] = currentUser
+          ? await client.findMyCourses()
+          : [];
+        setMyCourses(enrolled);
+        setCourses(
+          !currentUser || showAllCourses
+            ? await client.fetchAllCourses()
+            : enrolled,
         );
+      } catch {
+        setError("Unable to load courses");
+      }
+    };
+    load();
+  }, [currentUser, showAllCourses, setCourses]);
+  const onAddCourse = async () => {
+    try {
+      const created = await client.createCourse(course);
+      addCourse(created);
+      setMyCourses([...myCourses, created]);
+    } catch {
+      setError("Unable to create course");
+    }
+  };
+  const onUpdateCourse = async () => {
+    try {
+      updateCourse(await client.updateCourse(course));
+    } catch {
+      setError("Unable to update course");
+    }
+  };
+  const onDeleteCourse = async (courseId: string) => {
+    try {
+      await client.deleteCourse(courseId);
+      deleteCourse(courseId);
+      setMyCourses(myCourses.filter((c) => c._id !== courseId));
+    } catch {
+      setError("Unable to delete course");
+    }
+  };
+  const onEnrollment = async (courseId: string, enrolled: boolean) => {
+    if (!currentUser) return;
+    try {
+      if (enrolled) await client.unenrollFromCourse(currentUser._id, courseId);
+      else await client.enrollIntoCourse(currentUser._id, courseId);
+      const updated = await client.findMyCourses();
+      setMyCourses(updated);
+      if (!showAllCourses) setCourses(updated);
+    } catch {
+      setError("Unable to update enrollment");
+    }
+  };
   return (
     <div id="wd-dashboard">
       <h1 id="wd-dashboard-title">Dashboard</h1>
+      {error && (
+        <p role="alert" className="text-red-800">
+          {error}
+        </p>
+      )}
       <hr />
       <button
         type="button"
@@ -51,7 +104,7 @@ export default function Dashboard() {
               type="button"
               className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white"
               id="wd-add-new-course-click"
-              onClick={() => addCourse(course)}
+              onClick={onAddCourse}
             >
               Add
             </button>
@@ -59,7 +112,7 @@ export default function Dashboard() {
               type="button"
               className="rounded bg-yellow-400 px-3 py-1.5 text-sm font-medium"
               id="wd-update-course-click"
-              onClick={() => updateCourse(course)}
+              onClick={onUpdateCourse}
             >
               Update
             </button>
@@ -103,16 +156,21 @@ export default function Dashboard() {
         </div>
       )}
       <hr />
-      <h2 id="wd-dashboard-published">
-        Published Courses ({visibleCourses.length})
-      </h2>
+      <h2 id="wd-dashboard-published">Published Courses ({courses.length})</h2>
       <hr />
       <div
         id="wd-dashboard-courses"
         className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
       >
-        {visibleCourses.map((c) => (
-          <CourseCard key={c._id} course={c} onEdit={() => setCourse(c)} />
+        {courses.map((c) => (
+          <CourseCard
+            key={c._id}
+            course={c}
+            onEdit={() => setCourse(c)}
+            onDelete={() => onDeleteCourse(c._id)}
+            enrolled={myCourses.some((course) => course._id === c._id)}
+            onEnrollment={(enrolled) => onEnrollment(c._id, enrolled)}
+          />
         ))}
       </div>
     </div>

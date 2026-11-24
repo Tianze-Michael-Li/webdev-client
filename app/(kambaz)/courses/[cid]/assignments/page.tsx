@@ -1,7 +1,8 @@
 "use client";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import AssignmentItem from "./AssignmentItem";
-import { useState } from "react";
+import * as client from "../../client";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAssignmentsStore } from "../../../store/assignmentsStore";
 import { useAccountContext } from "../../../account/AccountContext";
@@ -9,6 +10,14 @@ import { useAccountContext } from "../../../account/AccountContext";
 export default function Assignments() {
   const { cid } = useParams<{ cid: string }>();
   const router = useRouter();
+  const setAssignments = useAssignmentsStore((state) => state.setAssignments);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    client
+      .findAssignmentsForCourse(cid)
+      .then(setAssignments)
+      .catch(() => setError("Unable to load assignments"));
+  }, [cid, setAssignments]);
   const allAssignments = useAssignmentsStore((state) => state.assignments);
   const deleteAssignment = useAssignmentsStore(
     (state) => state.deleteAssignment,
@@ -22,6 +31,11 @@ export default function Assignments() {
   const assignments = allAssignments.filter((a) => a.course === cid);
   return (
     <div id="wd-assignments">
+      {error && (
+        <p role="alert" className="text-red-800">
+          {error}
+        </p>
+      )}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="relative">
           <FaSearch className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-neutral-500" />
@@ -94,7 +108,13 @@ export default function Assignments() {
             <button
               id="wd-confirm-delete-assignment"
               className="rounded bg-red-600 px-3 py-2 text-white"
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  await client.deleteAssignment(deletingId);
+                } catch {
+                  setError("Unable to delete assignment");
+                  return;
+                }
                 deleteAssignment(deletingId, cid);
                 setDeletingId(null);
               }}

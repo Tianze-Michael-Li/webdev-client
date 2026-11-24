@@ -1,8 +1,8 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useAccountContext } from "../../account/AccountContext";
-import { useEnrollmentsStore } from "../../store/enrollmentsStore";
+import * as client from "../client";
 import { redirect, useParams } from "next/navigation";
 import { FaAlignJustify } from "react-icons/fa6";
 import CourseNavigation from "./Navigation";
@@ -21,14 +21,29 @@ export default function CoursesLayout({
   const [showCourseNav, setShowCourseNav] = useState(true);
 
   const { currentUser } = useAccountContext();
-  const enrollments = useEnrollmentsStore((state) => state.enrollments);
-  if (
-    currentUser &&
-    !enrollments.some(
-      (e) => e.user === currentUser._id && e.course === courseId,
-    )
-  )
-    redirect("/dashboard");
+  const setCourses = useCoursesStore((state) => state.setCourses);
+  const [loaded, setLoaded] = useState(false);
+  const [allowed, setAllowed] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const allCourses = await client.fetchAllCourses();
+        setCourses(allCourses);
+        if (currentUser) {
+          const enrolled = await client.findMyCourses();
+          setAllowed(enrolled.some((c: { _id: string }) => c._id === courseId));
+        } else setAllowed(true);
+        setLoaded(true);
+      } catch {
+        setError("Unable to load course");
+      }
+    };
+    load();
+  }, [courseId, currentUser, setCourses]);
+  if (error) return <p role="alert">{error}</p>;
+  if (!loaded) return null;
+  if (!allowed) redirect("/dashboard");
   return (
     <div id="wd-courses">
       <h2 className="text-2xl font-semibold text-red-600">
